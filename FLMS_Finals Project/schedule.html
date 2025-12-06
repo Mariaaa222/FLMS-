@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schedule | FLMS</title>
+  <link rel="stylesheet" href="css/schedule.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-chart-line"></i><a href="dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="subjects.html">Subjects</a></li>
+      <li><i class="fa-solid fa-user"></i><a href="teachers.html">Teachers</a></li>
+      <li class="active"><i class="fa-solid fa-calendar-days"></i><a href="schedule.html">Schedule</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="report.html">Reports</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <!-- HEADER -->
+    <header>
+      <div class="admin-header">
+        <p>Welcome, Admin!</p>
+        <img src="images/CTU_LOGO.png" alt="Logo" />
+      </div>
+    </header>
+
+    <!-- TITLE -->
+    <h1>SCHEDULE</h1>
+
+    <!-- TOP BUTTONS -->
+    <div class="top-buttons">
+      <button><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+      <button><i class="fa-solid fa-print"></i> Print Schedule</button>
+    </div>
+
+    <!-- SCHEDULE FORM -->
+    <div class="schedule-card">
+      <div class="form-group">
+        <label>Course Code</label>
+        <input type="text" value="PC 316" />
+      </div>
+
+      <div class="form-group">
+        <label>Instructor</label>
+        <select>
+          <option>Ms. Burgos</option>
+          <option>Mr. Armenton</option>
+          <option>Ms. Ajias</option>
+          <option>Mr. Paculba</option>
+          <option>Mr. Vestil</option>
+          <option>Mr. Arnado</option>
+          <option>Mr. Capuno</option>
+          <option>Mr. Hermosilla</option>
+          <option>Mr. Heredia</option>
+          <option>Mr. Depaling</option>
+          <option>Mr. Ayuda</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Room</label>
+        <select>
+          <option>COMLAB</option>
+          <option>ROOM 101</option>
+          <option>ROOM 102</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Day</label>
+        <select>
+          <option>Monday</option>
+          <option>Tuesday</option>
+          <option>Wednesday</option>
+          <option>Thursday</option>
+          <option>Friday</option>
+          <option>Saturday</option>
+          <option>Sunday</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Start Time</label>
+        <input type="time" />
+      </div>
+
+      <div class="form-group">
+        <label>End Time</label>
+        <input type="time" />
+      </div>
+
+      <button class="add-btn">Add to Timetable</button>
+    </div>
+
+    <!-- ✅ GOOGLE CALENDAR SECTION (Replaced Weekly Schedule) -->
+<div class="weekly-schedule">
+  <h2>Weekly Schedule</h2>
+  <div class="calendar-container">
+    <iframe 
+      src="https://calendar.google.com/calendar/embed?src=christamaev%40gmail.com&ctz=Asia%2FManila"
+      style="border: 0; border-radius: 10px;"
+      width="100%" 
+      height="800" 
+      frameborder="0"
+      scrolling="no">
+    </iframe>
+  </div>
+</div>
+
+
+  <!-- LOGOUT POPUP MODAL -->
+  <div id="logoutModal" class="logout-modal">
+    <div class="logout-content">
+      <h2>Confirm Logout</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="logout-buttons">
+        <button id="confirmLogout" class="confirm-btn">Yes, Exit</button>
+        <button id="cancelLogout" class="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT -->
+  <script>
+  // ===== LOGOUT FUNCTION =====
+  const logoutLink = document.getElementById('logoutLink');
+  const logoutModal = document.getElementById('logoutModal');
+  const confirmLogout = document.getElementById('confirmLogout');
+  const cancelLogout = document.getElementById('cancelLogout');
+  const addBtn = document.querySelector('.add-btn');
+
+  logoutLink.addEventListener('click', function (event) {
+    event.preventDefault();
+    logoutModal.style.display = 'flex';
+  });
+
+  confirmLogout.addEventListener('click', function () {
+    alert('You have been logged out successfully!');
+    logoutModal.style.display = 'none';
+    window.location.href = 'login.html';
+  });
+
+  cancelLogout.addEventListener('click', function () {
+    logoutModal.style.display = 'none';
+  });
+
+  window.addEventListener('click', function (event) {
+    if (event.target === logoutModal) {
+      logoutModal.style.display = 'none';
+    }
+  });
+
+  // ===== ADD TO GOOGLE CALENDAR =====
+  addBtn.addEventListener('click', function () {
+    const courseCode = document.querySelector('input[type="text"]').value.trim();
+    const selects = document.querySelectorAll('select');
+    const instructor = selects[0].value;
+    const room = selects[1].value;
+    const day = selects[2].value;
+    const startTime = document.querySelectorAll('input[type="time"]')[0].value;
+    const endTime = document.querySelectorAll('input[type="time"]')[1].value;
+
+    if (!courseCode || !startTime || !endTime) {
+      alert("⚠️ Please fill out all fields before adding to your Google Calendar.");
+      return;
+    }
+
+    const eventTitle = `${courseCode} (${instructor})`;
+    const eventDescription = `Class for ${courseCode} handled by ${instructor} in ${room}.`;
+
+    // --- Determine the next date of the selected day ---
+    const dayMap = {
+      Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+      Thursday: 4, Friday: 5, Saturday: 6
+    };
+    const today = new Date();
+    const eventDay = dayMap[day];
+    const diff = (eventDay - today.getDay() + 7) % 7;
+    const eventDate = new Date(today);
+    eventDate.setDate(today.getDate() + diff);
+
+    // --- Format date to YYYYMMDD ---
+    const year = eventDate.getFullYear();
+    const month = String(eventDate.getMonth() + 1).padStart(2, '0');
+    const date = String(eventDate.getDate()).padStart(2, '0');
+
+    const dateStr = `${year}${month}${date}`;
+    const startDateTime = `${dateStr}T${startTime.replace(':', '')}00`;
+    const endDateTime = `${dateStr}T${endTime.replace(':', '')}00`;
+
+    // --- Generate Google Calendar link ---
+    const googleCalendarUrl = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(
+      eventTitle
+    )}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent(
+      eventDescription
+    )}&location=${encodeURIComponent(
+      room
+    )}&ctz=Asia/Manila`;
+
+    // ✅ Opens your Google Calendar with prefilled event
+    window.open(googleCalendarUrl, '_blank');
+
+    // Optional: refresh embedded calendar after 3s
+    setTimeout(() => {
+      const iframe = document.querySelector('.calendar-container iframe');
+      iframe.src = iframe.src;
+    }, 3000);
+  });
+</script>

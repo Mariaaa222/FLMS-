@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Signup | FLMS</title>
+  <link rel="stylesheet" href="teacher-auth.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <div class="auth-container">
+    <h2>Create Teacher Account</h2>
+    <p class="subtitle">Register to access your FLMS teaching tools.</p>
+    <form id="signupForm">
+      <label for="fullName">Full Name</label>
+      <input id="fullName" type="text" placeholder="Enter your full name" required />
+
+      <label for="signupEmail">Email</label>
+      <input id="signupEmail" type="email" placeholder="Enter your email" required />
+
+      <label for="contactNumber">Contact Number</label>
+      <input id="contactNumber" type="tel" placeholder="09XX-XXX-XXXX" required />
+
+      <label for="department">Department</label>
+      <select id="department" required>
+        <option value="" disabled selected>Select Department</option>
+        <option value="Information Technology">Information Technology</option>
+        <option value="Hospitality Management">Hospitality Management</option>
+        <option value="Business Administration">Business Administration</option>
+        <option value="Education">Education</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label for="initialUnits">Current Load (Units)</label>
+      <input id="initialUnits" type="number" min="0" step="1" placeholder="e.g. 12" />
+
+      <label for="signupPassword">Password</label>
+      <input id="signupPassword" type="password" placeholder="Create password" required />
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input id="confirmPassword" type="password" placeholder="Confirm password" required />
+
+      <button type="submit">Sign Up</button>
+
+      <p>Already have an account? <a href="teacher-login.html">Login</a> or <a href="../login.html">switch to Admin signup</a></p>
+    </form>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    if (Auth.isAuthenticated()) {
+      const user = Auth.getCurrentUser();
+      window.location.href = user?.role === 'teacher' ? 'teacher-dashboard.html' : '../dashboard.html';
+    }
+
+    const signupForm = document.getElementById('signupForm');
+
+    signupForm.addEventListener('submit', event => {
+      event.preventDefault();
+
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+      const contactNumber = document.getElementById('contactNumber').value.trim();
+      const department = document.getElementById('department').value;
+      const units = Number(document.getElementById('initialUnits').value) || 0;
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password.length < 6) {
+        alert('Password must be at least 6 characters long.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert('Passwords do not match.');
+        return;
+      }
+
+      if (Database.findUserByEmail(email)) {
+        alert('An account with this email already exists.');
+        return;
+      }
+
+      const teacher = Database.addTeacher({
+        name: fullName,
+        email,
+        units,
+        department
+      });
+
+      const user = Database.addUser({
+        name: fullName,
+        email,
+        password,
+        role: 'teacher',
+        teacherId: teacher.id,
+        contactNumber,
+        department
+      });
+
+      Auth.login(user, { remember: true });
+      alert('Account created! Welcome to FLMS.');
+      window.location.href = 'teacher-dashboard.html';
+    });
+  </script>
+</body>
+</html>

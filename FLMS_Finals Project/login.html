@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | FLMS</title>
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+  <div class="auth-container">
+    <h2>Welcome Back!</h2>
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" placeholder="Enter your email" required>
+
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" placeholder="Enter your password" required>
+
+      <label class="remember-me">
+        <input id="rememberMe" type="checkbox">
+        Keep me signed in
+      </label>
+
+      <button type="submit">Login</button>
+      <p>Don’t have an account? <a href="signup.html">Sign up</a></p>
+    </form>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const redirectUser = user => {
+      if (!user) return;
+      const target =
+        user.role === 'teacher' ? 'teacher/teacher-dashboard.html' : 'dashboard.html';
+      window.location.href = target;
+    };
+
+    if (Auth.isAuthenticated()) {
+      redirectUser(Auth.getCurrentUser());
+    }
+
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const rememberInput = document.getElementById('rememberMe');
+
+    loginForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const email = emailInput.value.trim().toLowerCase();
+      const password = passwordInput.value;
+
+      const user = Database.findUserByEmail(email);
+      if (!user || user.password !== password) {
+        alert('Invalid email or password. Please try again.');
+        return;
+      }
+
+      // Log login activity
+      Database.addUserActivity('login', user.id, user.name, user.email, user.role, {
+        loginMethod: 'web',
+        rememberMe: rememberInput.checked,
+        success: true
+      });
+
+      Auth.login(user, { remember: rememberInput.checked });
+      redirectUser(user);
+    });
+  </script>
+
+</body>
+</html>

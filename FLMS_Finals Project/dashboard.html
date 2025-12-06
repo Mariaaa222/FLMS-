@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | FLMS</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li class="active"><i class="fa-solid fa-chart-line"></i><a href="dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="subjects.html">Subjects</a></li>
+      <li><i class="fa-solid fa-user"></i><a href="teachers.html">Teachers</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="schedule.html">Schedule</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="report.html">Reports</a></li>
+      <li><i class="fa-solid fa-users"></i><a href="user-tracking.html">User Tracking</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutBtn">Logout</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header>
+      <h1>Dashboard Overview</h1>
+      <div class="admin-info">
+        <p>Welcome, <span id="welcomeName">Admin</span>!</p>
+        <img src="images/CTU_LOGO.png" alt="CTU Logo">
+      </div>
+    </header>
+
+    <!-- Academic Year -->
+    <div class="ay-container">
+      <h3>Academic Year: 2025 - 2026 | Semester: 1st</h3>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+
+      <a href="teachers.html" class="card-link">
+        <div class="summary-card">
+          <i class="fa-solid fa-user-tie"></i>
+          <h2 id="totalTeachers">0</h2>
+          <p>Total Teachers</p>
+        </div>
+      </a>
+
+      <a href="subjects.html" class="card-link">
+        <div class="summary-card">
+          <i class="fa-solid fa-book"></i>
+          <h2 id="totalSubjects">0</h2>
+          <p>Total Subjects</p>
+        </div>
+      </a>
+
+      <a href="schedule.html" class="card-link">
+        <div class="summary-card">
+          <i class="fa-solid fa-calendar"></i>
+          <h2 id="totalSchedules">0</h2>
+          <p>Schedule</p>
+        </div>
+      </a>
+
+      <a href="report.html" class="card-link">
+        <div class="summary-card">
+          <i class="fa-solid fa-file-lines"></i>
+          <h2 id="totalReports">0</h2>
+          <p>Generated Reports</p>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Chart Section -->
+    <section class="chart-section">
+      <h2>Teaching Load Summary</h2>
+      <div id="teachingLoadChart" class="chart-box"></div>
+    </section>
+  </main>
+
+  <!-- Logout Confirmation Modal -->
+  <div id="logoutModal" class="logout-modal-overlay">
+    <div class="logout-modal">
+      <h2>Confirm Logout</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="modal-buttons">
+        <button class="confirm-btn" id="confirmLogout">Yes, Exit</button>
+        <button class="cancel-btn" id="cancelLogout">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+    Auth.requireAuth();
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutModal = document.getElementById('logoutModal');
+    const confirmLogout = document.getElementById('confirmLogout');
+    const cancelLogout = document.getElementById('cancelLogout');
+
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser) {
+      document.getElementById('welcomeName').textContent = currentUser.name.split(' ')[0] || currentUser.name;
+    }
+
+    function updateSummaryCards() {
+      document.getElementById('totalTeachers').textContent = Database.getTeachers().length;
+      document.getElementById('totalSubjects').textContent = Database.getSubjects().length;
+      document.getElementById('totalSchedules').textContent = Database.getSchedules().length;
+      document.getElementById('totalReports').textContent = Database.getReports().length;
+    }
+
+    function getChartData() {
+      const teachers = Database.getTeachers();
+      const palette = ['#004870', '#0073e6', '#3399ff', '#66b3ff', '#99ccff', '#b3ddff'];
+
+      const rows = teachers.length
+        ? teachers.map((teacher, index) => [
+            teacher.name,
+            Number(teacher.units) || 0,
+            palette[index % palette.length]
+          ])
+        : [['No Data', 0, '#cccccc']];
+
+      return [
+        ['Teacher', 'Total Loads', { role: 'style' }],
+        ...rows
+      ];
+    }
+
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+      const data = google.visualization.arrayToDataTable(getChartData());
+      const options = {
+        title: 'Teaching Load per Instructor (A.Y. 2025-2026)',
+        chartArea: { width: '70%' },
+        hAxis: { title: 'Total Loads', minValue: 0 },
+        vAxis: { title: 'Teachers' },
+        legend: { position: 'none' },
+        backgroundColor: '#f8fbff',
+        bar: { groupWidth: '60%' }
+      };
+
+      const chart = new google.visualization.BarChart(document.getElementById('teachingLoadChart'));
+      chart.draw(data, options);
+    }
+
+    logoutBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      logoutModal.classList.add('active');
+    });
+
+    confirmLogout.addEventListener('click', function() {
+      Auth.logout();
+      alert("You have been logged out successfully!");
+      window.location.href = "login.html";
+    });
+
+    cancelLogout.addEventListener('click', function() {
+      logoutModal.classList.remove('active');
+    });
+
+    window.addEventListener('click', function(e) {
+      if (e.target === logoutModal) {
+        logoutModal.classList.remove('active');
+      }
+    });
+
+    updateSummaryCards();
+  </script>
+</body>
+</html>

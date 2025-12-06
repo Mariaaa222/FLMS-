@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports | FLMS</title>
+  <link rel="stylesheet" href="css/report.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-chart-line"></i><a href="dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="subjects.html">Subjects</a></li>
+      <li><i class="fa-solid fa-user"></i><a href="teachers.html">Teachers</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="schedule.html">Schedule</a></li>
+      <li class="active"><i class="fa-solid fa-file-lines"></i><a href="report.html">Reports</a></li>
+      <li><i class="fa-solid fa-users"></i><a href="user-tracking.html">User Tracking</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <h3>A.Y. 2025 - 2026</h3>
+        <h1>Reports</h1>
+      </div>
+      <div class="header-right">
+        <span>Welcome, <strong id="welcomeName">Admin</strong>!</span>
+        <img src="images/CTU_LOGO.png" alt="Logo" />
+      </div>
+    </header>
+
+    <!-- REPORTS SECTION -->
+    <section class="reports-container">
+      <div class="reports-header">
+        <h2>REPORTS</h2>
+        <div class="reports-buttons">
+          <button><i class="fa fa-file-excel"></i> Export Excel</button>
+          <button><i class="fa fa-print"></i> Print Report</button>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <form class="filter-form">
+        <div>
+          <label>Semester</label>
+          <select id="filterSemester">
+            <option value="">All Semesters</option>
+            <option>1st Semester</option>
+            <option>2nd Semester</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Course</label>
+          <select id="filterCourse">
+            <option value="">All Courses</option>
+            <option>BSIT</option>
+            <option>BSHM</option>
+            <option>BSBA</option>
+            <option>BSED</option>
+            <option>BEED</option>
+            <option>BAPOS</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Year Level</label>
+          <select id="filterYear">
+            <option value="">All Year Levels</option>
+            <option>1st Year</option>
+            <option>2nd Year</option>
+            <option>3rd Year</option>
+            <option>4th Year</option>
+          </select>
+        </div>
+
+        <button type="button" class="generate-btn" id="generateReport">Generate Report</button>
+      </form>
+
+      <!-- REPORT TABLE -->
+      <div class="report-table-container">
+        <h3>Teacher Load Report</h3>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Teacher</th>
+              <th>Total Units</th>
+              <th>Subjects Handled</th>
+              <th>Semester</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Ms. Burgos</td>
+              <td>12</td>
+              <td>PC 316, IT 214</td>
+              <td>1st</td>
+            </tr>
+            <tr>
+              <td>Mr. Paculba</td>
+              <td>15</td>
+              <td>IT 215, IT 221</td>
+              <td>1st</td>
+            </tr>
+            <tr>
+              <td>Ms. Ajias</td>
+              <td>9</td>
+              <td>HM 111, HM 201</td>
+              <td>1st</td>
+            </tr>
+            <tr>
+              <td>Mr. Vestil</td>
+              <td>10</td>
+              <td>PC 101, IT 110</td>
+              <td>1st</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- LOGOUT POPUP MODAL -->
+  <div id="logoutModal" class="logout-modal">
+    <div class="logout-content">
+      <h2>Confirm Logout</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="logout-buttons">
+        <button id="confirmLogout" class="confirm-btn">Yes, Exit</button>
+        <button id="cancelLogout" class="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    Auth.requireAuth();
+    const logoutLink = document.getElementById('logoutLink');
+    const logoutModal = document.getElementById('logoutModal');
+    const confirmLogout = document.getElementById('confirmLogout');
+    const cancelLogout = document.getElementById('cancelLogout');
+
+    const reportTableBody = document.querySelector('.report-table tbody');
+    const welcomeName = document.getElementById('welcomeName');
+    const semesterFilter = document.getElementById('filterSemester');
+    const courseFilter = document.getElementById('filterCourse');
+    const yearFilter = document.getElementById('filterYear');
+    const generateBtn = document.getElementById('generateReport');
+
+    logoutLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      logoutModal.style.display = 'flex';
+    });
+
+    confirmLogout.addEventListener('click', function () {
+      Auth.logout();
+      alert('You have been logged out successfully!');
+      logoutModal.style.display = 'none';
+      window.location.href = 'login.html';
+    });
+
+    cancelLogout.addEventListener('click', function () {
+      logoutModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function (e) {
+      if (e.target === logoutModal) {
+        logoutModal.style.display = 'none';
+      }
+    });
+
+    if (welcomeName) {
+      const user = Auth.getCurrentUser();
+      if (user) welcomeName.textContent = user.name.split(' ')[0] || user.name;
+    }
+
+    function renderReports(data) {
+      reportTableBody.innerHTML = '';
+
+      if (!data.length) {
+        reportTableBody.innerHTML = '<tr><td colspan="4">No reports found for the selected filters.</td></tr>';
+        return;
+      }
+
+      data.forEach(report => {
+        reportTableBody.innerHTML += `
+          <tr>
+            <td>${report.teacher}</td>
+            <td>${report.totalUnits}</td>
+            <td>${report.subjects.join(', ')}</td>
+            <td>${report.semester}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function applyReportFilters() {
+      const semester = semesterFilter.value;
+      const course = courseFilter.value;
+      const year = yearFilter.value;
+
+      const filtered = Database.getReports().filter(report => {
+        const matchesSemester = !semester || report.semester === semester;
+        const matchesCourse = !course || report.course === course;
+        const matchesYear = !year || report.yearLevel === year;
+        return matchesSemester && matchesCourse && matchesYear;
+      });
+
+      renderReports(filtered);
+    }
+
+    generateBtn.addEventListener('click', applyReportFilters);
+    semesterFilter.addEventListener('change', applyReportFilters);
+    courseFilter.addEventListener('change', applyReportFilters);
+    yearFilter.addEventListener('change', applyReportFilters);
+
+    renderReports(Database.getReports());
+  </script>
+</body>
+</html>

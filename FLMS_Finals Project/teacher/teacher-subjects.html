@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Subjects | FLMS</title>
+  <link rel="stylesheet" href="teacher.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-gauge"></i><a href="teacher-dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="teacher-schedule.html">My Schedule</a></li>
+      <li class="active"><i class="fa-solid fa-book"></i><a href="teacher-subjects.html">My Subjects</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="teacher-report.html">Reports</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <div class="teacher-header">
+        <div>
+          <p>Welcome, <strong id="welcomeName">Teacher</strong>!</p>
+          <small id="welcomeEmail">teacher@flms.com</small>
+        </div>
+        <img src="../images/CTU_LOGO.png" alt="Logo" />
+      </div>
+    </header>
+
+    <h1>My Subjects</h1>
+    <p class="subtitle" id="subjectSummary">Loading your teaching load…</p>
+
+    <div class="toolbar">
+      <div class="filter-group">
+        <label for="searchInput">Search</label>
+        <input id="searchInput" type="search" placeholder="Search by code or title" />
+      </div>
+      <div class="filter-group">
+        <label for="semesterFilter">Semester</label>
+        <select id="semesterFilter">
+          <option value="">All</option>
+          <option>1st Semester</option>
+          <option>2nd Semester</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="yearFilter">Year Level</label>
+        <select id="yearFilter">
+          <option value="">All</option>
+          <option>1st Year</option>
+          <option>2nd Year</option>
+          <option>3rd Year</option>
+          <option>4th Year</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="subject-table">
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Subject Title</th>
+            <th>Year / Semester</th>
+            <th>Units</th>
+            <th>Schedule</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="subjectsTableBody">
+          <tr><td colspan="6">Fetching subjects…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const logoutLink = document.getElementById('logoutLink');
+    const welcomeNameEl = document.getElementById('welcomeName');
+    const welcomeEmailEl = document.getElementById('welcomeEmail');
+    const subjectSummaryEl = document.getElementById('subjectSummary');
+    const subjectsTableBody = document.getElementById('subjectsTableBody');
+    const searchInput = document.getElementById('searchInput');
+    const semesterFilter = document.getElementById('semesterFilter');
+    const yearFilter = document.getElementById('yearFilter');
+
+    const namesMatch = (a, b) => {
+      if (!a || !b) return false;
+      const norm = value => value.toLowerCase().replace(/\./g, '').trim();
+      const last = value => norm(value).split(/\s+/).pop();
+      return norm(a) === norm(b) || last(a) === last(b) || norm(a).includes(norm(b)) || norm(b).includes(norm(a));
+    };
+
+    const buildScheduleMap = teacherName => {
+      const schedules = Database.getSchedules().filter(item => namesMatch(item.instructor, teacherName));
+      const map = {};
+      schedules.forEach(item => {
+        if (!map[item.courseCode]) map[item.courseCode] = [];
+        map[item.courseCode].push(item);
+      });
+      return map;
+    };
+
+    const formatSchedule = entries => {
+      if (!entries || !entries.length) return '<span class="muted">Not set</span>';
+      return entries
+        .map(item => `${item.day.slice(0, 3)} ${item.startTime ?? '--:--'}-${item.endTime ?? '--:--'} (${item.room})`)
+        .join('<br>');
+    };
+
+    const renderTable = (subjects, scheduleMap) => {
+      if (!subjects.length) {
+        subjectsTableBody.innerHTML = '<tr><td colspan="6">No subjects match your filters.</td></tr>';
+        return;
+      }
+
+      subjectsTableBody.innerHTML = subjects
+        .map(subj => `
+          <tr>
+            <td>${subj.code}</td>
+            <td>${subj.title}</td>
+            <td>${subj.year} · ${subj.sem}</td>
+            <td>${subj.units}</td>
+            <td>${formatSchedule(scheduleMap[subj.code])}</td>
+            <td><button class="ghost-btn" onclick="viewSubject('${subj.id}')"><i class="fa-solid fa-eye"></i> Details</button></td>
+          </tr>
+        `)
+        .join('');
+    };
+
+    const filterSubjects = (subjects) => {
+      const term = searchInput.value.trim().toLowerCase();
+      const semester = semesterFilter.value;
+      const year = yearFilter.value;
+
+      return subjects.filter(subj => {
+        const matchTerm = !term || subj.title.toLowerCase().includes(term) || subj.code.toLowerCase().includes(term);
+        const matchSem = !semester || subj.sem === semester;
+        const matchYear = !year || subj.year === year;
+        return matchTerm && matchSem && matchYear;
+      });
+    };
+
+    const init = () => {
+      Auth.requireAuth();
+      const currentUser = Auth.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'teacher') {
+        window.location.href = '../dashboard.html';
+        return;
+      }
+
+      welcomeNameEl.textContent = currentUser.name.split(' ')[0] || currentUser.name;
+      welcomeEmailEl.textContent = currentUser.email;
+
+      const teacherRecord = currentUser.teacherId
+        ? Database.getTeachers().find(t => t.id === currentUser.teacherId)
+        : Database.findTeacherByEmail(currentUser.email);
+      const instructorName = teacherRecord?.name || currentUser.name;
+
+      const mySubjects = Database.getSubjects().filter(subj => namesMatch(subj.instructor, instructorName));
+      const scheduleMap = buildScheduleMap(instructorName);
+
+      subjectSummaryEl.textContent = mySubjects.length
+        ? `${mySubjects.length} subject${mySubjects.length > 1 ? 's' : ''} assigned to you`
+        : 'No subjects assigned yet.';
+
+      const updateTable = () => renderTable(filterSubjects(mySubjects), scheduleMap);
+
+      searchInput.addEventListener('input', updateTable);
+      semesterFilter.addEventListener('change', updateTable);
+      yearFilter.addEventListener('change', updateTable);
+
+      updateTable();
+
+      logoutLink.addEventListener('click', e => {
+        e.preventDefault();
+        Auth.logout();
+        window.location.href = '../login.html';
+      });
+
+      window.viewSubject = id => {
+        const subject = mySubjects.find(item => item.id === id);
+        if (!subject) return;
+        const schedule = scheduleMap[subject.code] || [];
+        alert(
+          `${subject.code} · ${subject.title}\n` +
+          `Year/Sem: ${subject.year} - ${subject.sem}\n` +
+          `Units: ${subject.units}\n` +
+          `Schedule:\n${schedule.length ? schedule.map(s => `${s.day} ${s.startTime}-${s.endTime} (${s.room})`).join('\n') : 'No schedule yet.'}`
+        );
+      };
+    };
+
+    init();
+  </script>
+</body>
+</html>

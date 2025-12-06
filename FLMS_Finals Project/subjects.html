@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subjects | FLMS Admin</title>
+  <link rel="stylesheet" href="css/subjects.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-chart-line"></i><a href="dashboard.html">Dashboard</a></li>
+      <li class="active"><i class="fa-solid fa-book"></i><a href="subjects.html">Subjects</a></li>
+      <li><i class="fa-solid fa-user"></i><a href="teachers.html">Teachers</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="schedule.html">Schedule</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="report.html">Reports</a></li>
+      <li><i class="fa-solid fa-users"></i><a href="user-tracking.html">User Tracking</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <header>
+      <h1>Subjects</h1>
+      <button class="add-btn" id="addBtn">+ Add Subject</button>
+    </header>
+
+    <!-- FILTERS -->
+    <div class="filter-section">
+      <input type="text" placeholder="Search subject..." id="searchInput">
+      <select id="yearFilter">
+        <option value="">All Year Levels</option>
+        <option value="1st Year">1st Year</option>
+        <option value="2nd Year">2nd Year</option>
+        <option value="3rd Year">3rd Year</option>
+        <option value="4th Year">4th Year</option>
+      </select>
+      <select id="semesterFilter">
+        <option value="">All Semesters</option>
+        <option value="1st Semester">1st Semester</option>
+        <option value="2nd Semester">2nd Semester</option>
+      </select>
+    </div>
+
+    <!-- SUBJECT TABLE -->
+    <div class="table-container">
+      <table id="subjectsTable">
+        <thead>
+          <tr>
+            <th>Subject Code</th>
+            <th>Subject Title</th>
+            <th>Year Level</th>
+            <th>Semester</th>
+            <th>Units</th>
+            <th>Instructor</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT MODAL -->
+  <div class="modal" id="subjectModal">
+    <div class="modal-content">
+      <h2 id="modalTitle">Add Subject</h2>
+      <input type="text" id="subjectCode" placeholder="Subject Code">
+      <input type="text" id="subjectTitle" placeholder="Subject Title">
+      <select id="yearLevel">
+        <option value="1st Year">1st Year</option>
+        <option value="2nd Year">2nd Year</option>
+        <option value="3rd Year">3rd Year</option>
+        <option value="4th Year">4th Year</option>
+      </select>
+      <select id="semester">
+        <option value="1st Semester">1st Semester</option>
+        <option value="2nd Semester">2nd Semester</option>
+      </select>
+      <input type="number" id="units" placeholder="Units">
+      <input type="text" id="instructor" placeholder="Instructor">
+      <div class="modal-buttons">
+        <button class="cancel-btn" id="cancelBtn">Cancel</button>
+        <button class="save-btn" id="saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE MODAL -->
+  <div class="modal" id="deleteModal">
+    <div class="modal-content">
+      <h2>Delete Subject</h2>
+      <p>Are you sure you want to delete <strong id="deleteSubjectName"></strong>?</p>
+      <div class="modal-buttons">
+        <button class="cancel-btn" id="cancelDelete">Cancel</button>
+        <button class="delete-btn" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGOUT MODAL -->
+  <div id="logoutModal" class="logout-modal">
+    <div class="logout-content">
+      <h2>Confirm Exit</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="logout-buttons">
+        <button id="confirmLogout">Yes, Exit</button>
+        <button id="cancelLogout">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Initialize database and authentication
+    Database.init();
+    Auth.requireAuth();
+    
+    const tableBody = document.querySelector("#subjectsTable tbody");
+    const modal = document.getElementById("subjectModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const addBtn = document.getElementById("addBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const searchInput = document.getElementById("searchInput");
+    const yearFilter = document.getElementById("yearFilter");
+    const semesterFilter = document.getElementById("semesterFilter");
+
+    const deleteModal = document.getElementById("deleteModal");
+    const deleteSubjectName = document.getElementById("deleteSubjectName");
+    const cancelDelete = document.getElementById("cancelDelete");
+    const confirmDelete = document.getElementById("confirmDelete");
+
+    let editId = null;
+    let deleteId = null;
+
+    const getSubjects = () => Database.getSubjects();
+
+    function renderTable(data = getSubjects()) {
+      tableBody.innerHTML = "";
+      data.forEach(subj => {
+        tableBody.innerHTML += `
+          <tr>
+            <td>${subj.code}</td>
+            <td>${subj.title}</td>
+            <td>${subj.year}</td>
+            <td>${subj.sem}</td>
+            <td>${subj.units}</td>
+            <td>${subj.instructor}</td>
+            <td>
+              <button class="edit" onclick="editSubject('${subj.id}')">Edit</button>
+              <button class="delete" onclick="deleteSubject('${subj.id}')">Delete</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    function applyFilters() {
+      const term = searchInput.value.trim().toLowerCase();
+      const year = yearFilter.value;
+      const semester = semesterFilter.value;
+
+      const filtered = getSubjects().filter(subj => {
+        const matchesTerm =
+          !term ||
+          subj.title.toLowerCase().includes(term) ||
+          subj.code.toLowerCase().includes(term);
+        const matchesYear = !year || subj.year === year;
+        const matchesSem = !semester || subj.sem === semester;
+        return matchesTerm && matchesYear && matchesSem;
+      });
+
+      renderTable(filtered);
+    }
+
+    function openModal(mode, id = null) {
+      modal.style.display = "flex";
+      const formFields = {
+        code: document.getElementById("subjectCode"),
+        title: document.getElementById("subjectTitle"),
+        year: document.getElementById("yearLevel"),
+        sem: document.getElementById("semester"),
+        units: document.getElementById("units"),
+        instructor: document.getElementById("instructor")
+      };
+
+      if (mode === "add") {
+        modalTitle.textContent = "Add Subject";
+        clearForm(formFields);
+        editId = null;
+      } else if (id) {
+        modalTitle.textContent = "Edit Subject";
+        const subject = getSubjects().find(subj => subj.id === id);
+        if (!subject) return;
+        formFields.code.value = subject.code;
+        formFields.title.value = subject.title;
+        formFields.year.value = subject.year;
+        formFields.sem.value = subject.sem;
+        formFields.units.value = subject.units;
+        formFields.instructor.value = subject.instructor;
+        editId = id;
+      }
+    }
+
+    function closeModal() {
+      modal.style.display = "none";
+    }
+
+    function clearForm(fields) {
+      fields.code.value = "";
+      fields.title.value = "";
+      fields.year.selectedIndex = 0;
+      fields.sem.selectedIndex = 0;
+      fields.units.value = "";
+      fields.instructor.value = "";
+    }
+
+    addBtn.addEventListener("click", () => openModal("add"));
+    cancelBtn.addEventListener("click", closeModal);
+
+    saveBtn.addEventListener("click", () => {
+      const subject = {
+        code: document.getElementById("subjectCode").value.trim(),
+        title: document.getElementById("subjectTitle").value.trim(),
+        year: document.getElementById("yearLevel").value,
+        sem: document.getElementById("semester").value,
+        units: Number(document.getElementById("units").value) || 0,
+        instructor: document.getElementById("instructor").value.trim()
+      };
+
+      if (!subject.code || !subject.title || !subject.instructor) {
+        alert("Please fill out all required fields.");
+        return;
+      }
+
+      const currentUser = Auth.getCurrentUser();
+      
+      if (editId) {
+        Database.updateSubject(editId, subject);
+        // Log audit trail
+        Database.addAuditLog('update', 'subject', editId, 
+          currentUser.id, currentUser.name, subject);
+        alert("Subject updated successfully!");
+      } else {
+        const newSubject = Database.addSubject(subject);
+        // Log audit trail
+        Database.addAuditLog('create', 'subject', newSubject.id, 
+          currentUser.id, currentUser.name, subject);
+        alert("Subject added successfully!");
+      }
+
+      applyFilters();
+      closeModal();
+    });
+
+    window.deleteSubject = function(id) {
+      deleteId = id;
+      const subject = getSubjects().find(subj => subj.id === id);
+      deleteSubjectName.textContent = subject ? subject.title : "";
+      deleteModal.style.display = "flex";
+    };
+
+    window.editSubject = function(id) {
+      openModal("edit", id);
+    };
+
+    confirmDelete.addEventListener("click", () => {
+      if (deleteId) {
+        const subject = getSubjects().find(subj => subj.id === deleteId);
+        const currentUser = Auth.getCurrentUser();
+        
+        Database.deleteSubject(deleteId);
+        // Log audit trail
+        if (subject) {
+          Database.addAuditLog('delete', 'subject', deleteId, 
+            currentUser.id, currentUser.name, subject);
+        }
+        alert("Subject deleted successfully!");
+        applyFilters();
+      }
+      deleteModal.style.display = "none";
+      deleteId = null;
+    });
+
+    cancelDelete.addEventListener("click", () => {
+      deleteModal.style.display = "none";
+      deleteId = null;
+    });
+
+    searchInput.addEventListener("input", applyFilters);
+    yearFilter.addEventListener("change", applyFilters);
+    semesterFilter.addEventListener("change", applyFilters);
+
+    const logoutLink = document.getElementById('logoutLink');
+    const logoutModal = document.getElementById('logoutModal');
+    const confirmLogout = document.getElementById('confirmLogout');
+    const cancelLogout = document.getElementById('cancelLogout');
+
+    logoutLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      logoutModal.style.display = 'flex';
+    });
+
+    confirmLogout.addEventListener('click', function () {
+      Auth.logout();
+      alert('You have been logged out successfully!');
+      logoutModal.style.display = 'none';
+      window.location.href = 'login.html';
+    });
+
+    cancelLogout.addEventListener('click', function () {
+      logoutModal.style.display = 'none';
+    });
+
+    window.addEventListener("click", function(e) {
+      if (e.target === modal) closeModal();
+      if (e.target === deleteModal) deleteModal.style.display = "none";
+      if (e.target === logoutModal) logoutModal.style.display = "none";
+    });
+
+    renderTable();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Schedule | FLMS</title>
+  <link rel="stylesheet" href="teacher.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-gauge"></i><a href="teacher-dashboard.html">Dashboard</a></li>
+      <li class="active"><i class="fa-solid fa-calendar-days"></i><a href="teacher-schedule.html">My Schedule</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="teacher-subjects.html">My Subjects</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="teacher-report.html">Reports</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <div class="teacher-header">
+        <div>
+          <p>Welcome, <strong id="welcomeName">Teacher</strong>!</p>
+          <small id="welcomeEmail">teacher@flms.com</small>
+        </div>
+        <img src="../images/CTU_LOGO.png" alt="Logo" />
+      </div>
+    </header>
+
+    <section class="profile-banner">
+      <div class="profile-card next-class" id="nextClassCard">
+        <div>
+          <span class="label">Next Class</span>
+          <h2 id="nextClassTitle">No upcoming class</h2>
+          <p id="nextClassMeta">Enjoy your day!</p>
+        </div>
+        <div class="profile-meta">
+          <div>
+            <span class="label">Day</span>
+            <strong id="nextClassDay">—</strong>
+          </div>
+          <div>
+            <span class="label">Room</span>
+            <strong id="nextClassRoom">—</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <div class="filter-group">
+        <label for="dayFilter">Filter by day</label>
+        <select id="dayFilter">
+          <option value="">All days</option>
+          <option>Monday</option>
+          <option>Tuesday</option>
+          <option>Wednesday</option>
+          <option>Thursday</option>
+          <option>Friday</option>
+          <option>Saturday</option>
+          <option>Sunday</option>
+        </select>
+      </div>
+      <div class="toolbar-actions">
+        <button id="refreshCalendar" class="ghost-btn"><i class="fa-solid fa-arrows-rotate"></i> Refresh Calendar</button>
+        <button id="openGoogleCalendar" class="primary-btn"><i class="fa-solid fa-calendar-plus"></i> Open Google Calendar</button>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Weekly Schedule</h2>
+        <small id="scheduleSummary">Loading…</small>
+      </div>
+      <div class="table-wrapper">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Day</th>
+              <th>Time</th>
+              <th>Room</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="scheduleTableBody">
+            <tr><td colspan="5">Fetching schedule…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Embedded Calendar</h2>
+        <small>Refreshes automatically when you add classes.</small>
+      </div>
+      <div class="calendar-container">
+        <iframe
+          id="calendarFrame"
+          src="https://calendar.google.com/calendar/embed?mode=WEEK&ctz=Asia%2FManila"
+          style="border:0; border-radius: 10px;"
+          width="100%"
+          height="650"
+          frameborder="0"
+          scrolling="no">
+        </iframe>
+      </div>
+    </section>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const dayOrder = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    const logoutLink = document.getElementById('logoutLink');
+    const welcomeNameEl = document.getElementById('welcomeName');
+    const welcomeEmailEl = document.getElementById('welcomeEmail');
+    const scheduleTableBody = document.getElementById('scheduleTableBody');
+    const scheduleSummaryEl = document.getElementById('scheduleSummary');
+    const dayFilter = document.getElementById('dayFilter');
+    const nextClassTitle = document.getElementById('nextClassTitle');
+    const nextClassMeta = document.getElementById('nextClassMeta');
+    const nextClassDay = document.getElementById('nextClassDay');
+    const nextClassRoom = document.getElementById('nextClassRoom');
+    const calendarFrame = document.getElementById('calendarFrame');
+
+    const namesMatch = (a, b) => {
+      if (!a || !b) return false;
+      const norm = value => value.toLowerCase().replace(/\./g, '').trim();
+      const last = value => norm(value).split(/\s+/).pop();
+      return norm(a) === norm(b) || last(a) === last(b) || norm(a).includes(norm(b)) || norm(b).includes(norm(a));
+    };
+
+    const formatTime = value => {
+      if (!value) return '--:--';
+      const [hour, minute] = value.split(':');
+      const date = new Date();
+      date.setHours(Number(hour), Number(minute));
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    };
+
+    const renderSchedule = (schedules, filterDay = '') => {
+      const filtered = filterDay ? schedules.filter(item => item.day === filterDay) : schedules;
+
+      if (!filtered.length) {
+        scheduleTableBody.innerHTML = '<tr><td colspan="5">No schedule found for the selected filter.</td></tr>';
+      } else {
+        scheduleTableBody.innerHTML = filtered
+          .map(item => {
+            const timeRange = `${formatTime(item.startTime)} - ${formatTime(item.endTime)}`;
+            return `
+              <tr>
+                <td>${item.courseCode}</td>
+                <td>${item.day}</td>
+                <td>${timeRange}</td>
+                <td>${item.room}</td>
+                <td><button class="ghost-btn" onclick="openCalendarEvent('${item.id}')"><i class="fa-solid fa-calendar-plus"></i> Add to Calendar</button></td>
+              </tr>
+            `;
+          })
+          .join('');
+      }
+
+      scheduleSummaryEl.textContent = `${filtered.length} class${filtered.length === 1 ? '' : 'es'} shown`;
+    };
+
+    const findNextClass = schedules => {
+      if (!schedules.length) {
+        nextClassTitle.textContent = 'No upcoming class';
+        nextClassMeta.textContent = 'Enjoy your day!';
+        nextClassDay.textContent = '—';
+        nextClassRoom.textContent = '—';
+        return;
+      }
+
+      const now = new Date();
+      const todayIndex = now.getDay();
+
+      const sorted = [...schedules].sort((a, b) => {
+        const dayDiff = (dayOrder.indexOf(a.day) - todayIndex + 7) % 7 - ((dayOrder.indexOf(b.day) - todayIndex + 7) % 7);
+        if (dayDiff !== 0) return dayDiff;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+
+      const next = sorted[0];
+      nextClassTitle.textContent = next.courseCode;
+      nextClassMeta.textContent = `${next.day} · ${formatTime(next.startTime)} - ${formatTime(next.endTime)}`;
+      nextClassDay.textContent = next.day;
+      nextClassRoom.textContent = next.room;
+    };
+
+    const openCalendarEvent = scheduleId => {
+      const schedule = window.__teacherSchedules.find(item => item.id === scheduleId);
+      if (!schedule) return;
+
+      const eventTitle = `${schedule.courseCode} (${schedule.day})`;
+      const eventDescription = `Class handled by you in ${schedule.room}.`;
+
+      const today = new Date();
+      const dayIndex = dayOrder.indexOf(schedule.day);
+      const diff = (dayIndex - today.getDay() + 7) % 7;
+      const eventDate = new Date(today);
+      eventDate.setDate(today.getDate() + diff);
+
+      const formatDate = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const dateStr = formatDate(eventDate);
+      const startStr = `${dateStr}T${schedule.startTime.replace(':', '')}00`;
+      const endStr = `${dateStr}T${schedule.endTime.replace(':', '')}00`;
+
+      const url = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(eventTitle)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(eventDescription)}&location=${encodeURIComponent(schedule.room)}&ctz=Asia/Manila`;
+      window.open(url, '_blank');
+    };
+
+    window.openCalendarEvent = openCalendarEvent;
+
+    const init = () => {
+      Auth.requireAuth();
+      const currentUser = Auth.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'teacher') {
+        window.location.href = '../dashboard.html';
+        return;
+      }
+
+      welcomeNameEl.textContent = currentUser.name.split(' ')[0] || currentUser.name;
+      welcomeEmailEl.textContent = currentUser.email;
+
+      const teacherRecord = currentUser.teacherId
+        ? Database.getTeachers().find(t => t.id === currentUser.teacherId)
+        : Database.findTeacherByEmail(currentUser.email);
+      const instructorName = teacherRecord?.name || currentUser.name;
+
+      const schedules = Database.getSchedules().filter(item => namesMatch(item.instructor, instructorName));
+      window.__teacherSchedules = schedules;
+
+      findNextClass(schedules);
+      renderSchedule(schedules);
+
+      dayFilter.addEventListener('change', () => renderSchedule(schedules, dayFilter.value));
+
+      document.getElementById('openGoogleCalendar').addEventListener('click', () => {
+        window.open('https://calendar.google.com/calendar/u/0/r', '_blank');
+      });
+
+      document.getElementById('refreshCalendar').addEventListener('click', () => {
+        calendarFrame.src = calendarFrame.src;
+      });
+
+      logoutLink.addEventListener('click', e => {
+        e.preventDefault();
+        Auth.logout();
+        window.location.href = '../login.html';
+      });
+    };
+
+    init();
+  </script>
+</body>
+</html>

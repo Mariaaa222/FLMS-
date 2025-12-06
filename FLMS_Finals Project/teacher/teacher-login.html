@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Login | FLMS</title>
+  <link rel="stylesheet" href="teacher-auth.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <div class="auth-container">
+    <h2>Teacher Login</h2>
+    <p class="subtitle">Sign in to view your schedule, subjects, and reports.</p>
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" placeholder="Enter your email" required />
+
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" placeholder="Enter your password" required />
+
+      <label class="remember-me">
+        <input id="rememberMe" type="checkbox" />
+        Keep me signed in
+      </label>
+
+      <button type="submit">Login</button>
+
+      <p>Don’t have an account? <a href="teacher-signup.html">Sign Up</a></p>
+      <p>Need admin access? <a href="../login.html">Go to Admin Login</a></p>
+    </form>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const redirectAfterLogin = user => {
+      if (!user) return;
+      const target = user.role === 'teacher' ? 'teacher-dashboard.html' : '../dashboard.html';
+      window.location.href = target;
+    };
+
+    if (Auth.isAuthenticated()) {
+      redirectAfterLogin(Auth.getCurrentUser());
+    }
+
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const rememberInput = document.getElementById('rememberMe');
+
+    loginForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const email = emailInput.value.trim().toLowerCase();
+      const password = passwordInput.value;
+
+      const user = Database.findUserByEmail(email);
+      if (!user || user.password !== password || user.role !== 'teacher') {
+        alert('Invalid teacher credentials. Please try again.');
+        return;
+      }
+
+      Auth.login(user, { remember: rememberInput.checked });
+      redirectAfterLogin(user);
+    });
+  </script>
+</body>
+</html>

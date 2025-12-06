@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teachers | FLMS Dashboard</title>
+  <link rel="stylesheet" href="css/teachers.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-chart-line"></i><a href="dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="subjects.html">Subjects</a></li>
+      <li class="active"><i class="fa-solid fa-user"></i><a href="teachers.html">Teachers</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="schedule.html">Schedule</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="report.html">Reports</a></li>
+      <li><i class="fa-solid fa-users"></i><a href="user-tracking.html">User Tracking</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <div class="admin-header">
+        <p>Welcome, <span id="welcomeName">Admin</span>!</p>
+        <img src="images/CTU_LOGO.png" alt="Logo">
+      </div>
+    </header>
+
+    <div class="header-section">
+      <h1>TEACHER MANAGEMENT</h1>
+      <div class="header-buttons">
+        <button id="addTeacherBtn" class="btn-add"><i class="fa-solid fa-plus"></i> Add New Teacher</button>
+        <button id="exportExcelBtn" class="btn-export"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+        <button id="exportCSVBtn" class="btn-export"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+        <button id="exportPDFBtn" class="btn-export"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+        <button id="printBtn" class="btn-print"><i class="fa-solid fa-print"></i> Print</button>
+      </div>
+    </div>
+
+    <!-- Search & Filter Section -->
+    <div class="search-filter-section">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Search by name, email, department, or subject...">
+      </div>
+      <div class="filters">
+        <select id="filterDepartment">
+          <option value="">All Departments</option>
+          <option value="Information Technology">Information Technology</option>
+          <option value="Hospitality Management">Hospitality Management</option>
+          <option value="Business Administration">Business Administration</option>
+          <option value="Education">Education</option>
+        </select>
+        <select id="filterStatus">
+          <option value="">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="On Leave">On Leave</option>
+          <option value="Resigned">Resigned</option>
+        </select>
+        <select id="filterEmployment">
+          <option value="">All Employment Types</option>
+          <option value="Full-time">Full-time</option>
+          <option value="Part-time">Part-time</option>
+        </select>
+        <select id="filterAcademicYear">
+          <option value="">All Academic Years</option>
+          <option value="2025-2026">2025-2026</option>
+          <option value="2024-2025">2024-2025</option>
+        </select>
+        <button id="clearFilters" class="btn-clear"><i class="fa-solid fa-xmark"></i> Clear Filters</button>
+      </div>
+    </div>
+
+    <!-- Teacher Table -->
+    <div class="teacher-card">
+      <div class="table-header">
+        <div class="table-info">
+          <span id="tableCount">0</span> teachers found
+        </div>
+        <div class="table-controls">
+          <label>Sort by:</label>
+          <select id="sortBy">
+            <option value="name">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="units">Units (Low-High)</option>
+            <option value="units-desc">Units (High-Low)</option>
+            <option value="department">Department</option>
+            <option value="status">Status</option>
+          </select>
+          <label>Show:</label>
+          <select id="itemsPerPage">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="teacher-table" id="teacherTable">
+          <thead>
+            <tr>
+              <th>Teacher Name</th>
+              <th>Rank</th>
+              <th>Department</th>
+              <th>Email Address</th>
+              <th>Contact</th>
+              <th>Units <i class="fa-solid fa-sort"></i></th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="teacherTableBody">
+            <tr><td colspan="8" class="empty-state">Loading teachers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Teacher Modal -->
+  <div class="modal" id="teacherModal" style="display:none;">
+    <div class="modal-content large-modal">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle">Add New Teacher</h2>
+      <form id="teacherForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="teacherName">Full Name <span class="required">*</span></label>
+            <input type="text" id="teacherName" placeholder="Enter teacher's full name" required>
+          </div>
+          <div class="form-group">
+            <label for="teacherEmail">Email <span class="required">*</span></label>
+            <input type="email" id="teacherEmail" placeholder="Enter email address" required>
+            <small class="error-message" id="emailError"></small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="teacherRank">Rank <span class="required">*</span></label>
+            <select id="teacherRank" required>
+              <option value="">Select Rank</option>
+              <option value="Instructor I">Instructor I</option>
+              <option value="Instructor II">Instructor II</option>
+              <option value="Instructor III">Instructor III</option>
+              <option value="Assistant Professor">Assistant Professor</option>
+              <option value="Associate Professor">Associate Professor</option>
+              <option value="Professor">Professor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="teacherDepartment">Department <span class="required">*</span></label>
+            <select id="teacherDepartment" required>
+              <option value="">Select Department</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Hospitality Management">Hospitality Management</option>
+              <option value="Business Administration">Business Administration</option>
+              <option value="Education">Education</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="teacherSpecialization">Specialization / Area of Expertise</label>
+            <input type="text" id="teacherSpecialization" placeholder="e.g. Programming, Database Systems">
+          </div>
+          <div class="form-group">
+            <label for="teacherEmploymentStatus">Employment Status <span class="required">*</span></label>
+            <select id="teacherEmploymentStatus" required>
+              <option value="">Select Status</option>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="teacherContact">Contact Number</label>
+            <input type="tel" id="teacherContact" placeholder="+63 912 345 6789">
+          </div>
+          <div class="form-group">
+            <label for="teacherOfficeHours">Office Hours</label>
+            <input type="text" id="teacherOfficeHours" placeholder="Mon-Fri 8:00 AM - 5:00 PM">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="teacherUnits">Units <span class="required">*</span></label>
+            <input type="number" id="teacherUnits" placeholder="Enter total units" min="0" max="30" required>
+          </div>
+          <div class="form-group">
+            <label for="teacherStatus">Status <span class="required">*</span></label>
+            <select id="teacherStatus" required>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="On Leave">On Leave</option>
+              <option value="Resigned">Resigned</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="teacherAcademicYear">Academic Year</label>
+            <select id="teacherAcademicYear">
+              <option value="2025-2026">2025-2026</option>
+              <option value="2024-2025">2024-2025</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="teacherSemester">Semester</label>
+            <select id="teacherSemester">
+              <option value="1st Semester">1st Semester</option>
+              <option value="2nd Semester">2nd Semester</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="saveBtn" class="btn-save"><i class="fa-solid fa-check"></i> Save Teacher</button>
+          <button type="button" class="btn-cancel-form" id="cancelBtn"><i class="fa-solid fa-times"></i> Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Teacher Profile View Modal -->
+  <div class="modal" id="profileModal" style="display:none;">
+    <div class="modal-content profile-modal">
+      <span class="close">&times;</span>
+      <div class="profile-header">
+        <div class="profile-avatar">
+          <i class="fa-solid fa-user-tie"></i>
+        </div>
+        <div class="profile-info">
+          <h2 id="profileName">-</h2>
+          <p id="profileRank">-</p>
+          <p id="profileDepartment">-</p>
+        </div>
+      </div>
+      <div class="profile-body">
+        <div class="profile-section">
+          <h3><i class="fa-solid fa-info-circle"></i> Basic Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Email:</label>
+              <span id="profileEmail">-</span>
+            </div>
+            <div class="info-item">
+              <label>Contact:</label>
+              <span id="profileContact">-</span>
+            </div>
+            <div class="info-item">
+              <label>Employment Status:</label>
+              <span id="profileEmployment">-</span>
+            </div>
+            <div class="info-item">
+              <label>Office Hours:</label>
+              <span id="profileOfficeHours">-</span>
+            </div>
+            <div class="info-item">
+              <label>Specialization:</label>
+              <span id="profileSpecialization">-</span>
+            </div>
+            <div class="info-item">
+              <label>Status:</label>
+              <span id="profileStatus" class="status-badge">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="profile-section">
+          <h3><i class="fa-solid fa-book"></i> Teaching Load</h3>
+          <div class="load-info">
+            <div class="load-item">
+              <label>Total Units:</label>
+              <span id="profileUnits" class="units-display">-</span>
+            </div>
+            <div class="load-item">
+              <label>Academic Year:</label>
+              <span id="profileAcademicYear">-</span>
+            </div>
+            <div class="load-item">
+              <label>Semester:</label>
+              <span id="profileSemester">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="profile-section">
+          <h3><i class="fa-solid fa-list"></i> Assigned Subjects</h3>
+          <div id="profileSubjects" class="subjects-list">-</div>
+        </div>
+        <div class="profile-section">
+          <h3><i class="fa-solid fa-calendar"></i> Schedule Overview</h3>
+          <div id="profileSchedule" class="schedule-overview">-</div>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn-edit-profile" id="editFromProfile"><i class="fa-solid fa-pen"></i> Edit Teacher</button>
+        <button class="btn-close-profile" id="closeProfile"><i class="fa-solid fa-times"></i> Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal" id="deleteModal" style="display:none;">
+    <div class="modal-content">
+      <h2><i class="fa-solid fa-exclamation-triangle"></i> Delete Teacher</h2>
+      <p>Are you sure you want to delete <strong id="deleteTeacherName"></strong>?</p>
+      <p class="warning-text">This action cannot be undone. All associated data will be permanently removed.</p>
+      <div class="delete-buttons">
+        <button id="confirmDelete" class="btn-delete-confirm"><i class="fa-solid fa-trash"></i> Yes, Delete</button>
+        <button id="cancelDelete" class="btn-cancel-delete"><i class="fa-solid fa-times"></i> Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div id="logoutModal" class="logout-modal">
+    <div class="logout-content">
+      <h2>Confirm Exit</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="logout-buttons">
+        <button id="confirmLogout">Yes, Exit</button>
+        <button id="cancelLogout">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Alert -->
+  <div id="messageAlert" class="message-alert"></div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/teachers.js"></script>
+</body>
+</html>

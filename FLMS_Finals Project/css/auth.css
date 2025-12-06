@@ -1,0 +1,134 @@
+/* =========================
+   GENERAL PAGE SETUP
+========================= */
+body {
+  font-family: "Poppins", sans-serif;
+  background: #f4f8fc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* =========================
+   AUTH CONTAINER
+========================= */
+.auth-container {
+  background: #fff;
+  padding: 40px 35px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  width: 330px;
+  text-align: center;
+}
+
+.auth-container h2 {
+  color: #004870;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+/* =========================
+   FORM ELEMENTS
+========================= */
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  text-align: left;
+  margin: 10px 0 5px;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+  outline: none;
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: #004870;
+  box-shadow: 0 0 0 3px rgba(0, 72, 112, 0.15);
+}
+
+/* =========================
+   BUTTONS
+========================= */
+button {
+  background: #004870;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  margin-top: 18px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #0059b3;
+}
+
+/* =========================
+   TEXT & LINKS
+========================= */
+p {
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+a {
+  color: #004870;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   LOGOUT BUTTONS
+========================= */
+.logout-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.logout-buttons a {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.logout-buttons .yes {
+  background: #dc2626;
+  color: white;
+}
+
+.logout-buttons .cancel {
+  background: #e5e7eb;
+  color: #333;
+}
+
+.logout-buttons .yes:hover {
+  background: #b91c1c;
+}
+
+.logout-buttons .cancel:hover {
+  background: #d1d5db;
+}

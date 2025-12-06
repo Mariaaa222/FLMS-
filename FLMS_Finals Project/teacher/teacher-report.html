@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports | FLMS</title>
+  <link rel="stylesheet" href="teacher.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-gauge"></i><a href="teacher-dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="teacher-schedule.html">My Schedule</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="teacher-subjects.html">My Subjects</a></li>
+      <li class="active"><i class="fa-solid fa-file-lines"></i><a href="teacher-report.html">Reports</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <div class="teacher-header">
+        <div>
+          <p>Welcome, <strong id="welcomeName">Teacher</strong>!</p>
+          <small id="welcomeEmail">teacher@flms.com</small>
+        </div>
+        <img src="../images/CTU_LOGO.png" alt="Logo" />
+      </div>
+    </header>
+
+    <h1>Reports & Load Summary</h1>
+    <p class="subtitle" id="reportSummary">Tracking your submitted reports…</p>
+
+    <div class="cards">
+      <div class="card">
+        <i class="fa-solid fa-file-lines"></i>
+        <h3>Total Reports Submitted</h3>
+        <p><span id="reportCount">0</span></p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-layer-group"></i>
+        <h3>Average Load</h3>
+        <p><span id="avgUnits">0</span> units</p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-calendar-week"></i>
+        <h3>Current Semester</h3>
+        <p id="latestSemester">—</p>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Submit New Report</h2>
+        <small>Updates your load summary and visible to admins.</small>
+      </div>
+      <form id="reportForm" class="form-grid">
+        <label>
+          Semester
+          <select id="reportSemester" required>
+            <option value="" disabled selected>Choose semester</option>
+            <option>1st Semester</option>
+            <option>2nd Semester</option>
+          </select>
+        </label>
+
+        <label>
+          Course / Program
+          <select id="reportCourse" required>
+            <option value="" disabled selected>Select course</option>
+            <option>BSIT</option>
+            <option>BSHM</option>
+            <option>BSBA</option>
+            <option>BSED</option>
+            <option>BEED</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <label>
+          Year Level
+          <select id="reportYearLevel" required>
+            <option value="" disabled selected>Select year</option>
+            <option>1st Year</option>
+            <option>2nd Year</option>
+            <option>3rd Year</option>
+            <option>4th Year</option>
+          </select>
+        </label>
+
+        <label>
+          Total Units
+          <input id="reportUnits" type="number" min="0" step="1" placeholder="e.g. 12" required />
+        </label>
+
+        <label class="full-width">
+          Subjects Handled <small>(separate by commas)</small>
+          <input id="reportSubjects" type="text" placeholder="e.g. IT 214, IT 215" required />
+        </label>
+
+        <div class="full-width form-actions">
+          <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i> Submit Report</button>
+          <button type="button" id="resetForm" class="ghost-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Submitted Reports</h2>
+        <small id="historySummary">No reports yet.</small>
+      </div>
+      <div class="table-wrapper">
+        <table class="subject-table">
+          <thead>
+            <tr>
+              <th>Semester</th>
+              <th>Course / Year</th>
+              <th>Units</th>
+              <th>Subjects</th>
+              <th>Filed On</th>
+            </tr>
+          </thead>
+          <tbody id="reportHistoryBody">
+            <tr><td colspan="5">No report history yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const logoutLink = document.getElementById('logoutLink');
+    const welcomeNameEl = document.getElementById('welcomeName');
+    const welcomeEmailEl = document.getElementById('welcomeEmail');
+    const reportSummaryEl = document.getElementById('reportSummary');
+    const reportCountEl = document.getElementById('reportCount');
+    const avgUnitsEl = document.getElementById('avgUnits');
+    const latestSemesterEl = document.getElementById('latestSemester');
+    const historySummaryEl = document.getElementById('historySummary');
+    const reportHistoryBody = document.getElementById('reportHistoryBody');
+    const reportForm = document.getElementById('reportForm');
+
+    const namesMatch = (a, b) => {
+      if (!a || !b) return false;
+      const norm = value => value.toLowerCase().replace(/\./g, '').trim();
+      const last = value => norm(value).split(/\s+/).pop();
+      return norm(a) === norm(b) || last(a) === last(b) || norm(a).includes(norm(b)) || norm(b).includes(norm(a));
+    };
+
+    const renderHistory = reports => {
+      if (!reports.length) {
+        reportHistoryBody.innerHTML = '<tr><td colspan="5">No report history yet.</td></tr>';
+        historySummaryEl.textContent = 'No submissions yet.';
+        return;
+      }
+
+      reportHistoryBody.innerHTML = reports
+        .map(rep => `
+          <tr>
+            <td>${rep.semester}</td>
+            <td>${rep.course} / ${rep.yearLevel}</td>
+            <td>${rep.totalUnits}</td>
+            <td>${rep.subjects.join(', ')}</td>
+            <td>${rep.createdAt ? new Date(rep.createdAt).toLocaleDateString() : '—'}</td>
+          </tr>
+        `)
+        .join('');
+
+      historySummaryEl.textContent = `${reports.length} record${reports.length > 1 ? 's' : ''} on file`;
+    };
+
+    const updateCards = reports => {
+      reportCountEl.textContent = reports.length;
+      if (!reports.length) {
+        avgUnitsEl.textContent = 0;
+        latestSemesterEl.textContent = '—';
+        reportSummaryEl.textContent = 'No reports submitted yet.';
+        return;
+      }
+
+      const avgUnits = Math.round(
+        reports.reduce((sum, rep) => sum + Number(rep.totalUnits || 0), 0) / reports.length
+      );
+      avgUnitsEl.textContent = avgUnits;
+      latestSemesterEl.textContent = reports[0].semester;
+      reportSummaryEl.textContent = 'Keep your admin up to date with your current load.';
+    };
+
+    const init = () => {
+      Auth.requireAuth();
+      const currentUser = Auth.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'teacher') {
+        window.location.href = '../dashboard.html';
+        return;
+      }
+
+      welcomeNameEl.textContent = currentUser.name.split(' ')[0] || currentUser.name;
+      welcomeEmailEl.textContent = currentUser.email;
+
+      const teacherRecord = currentUser.teacherId
+        ? Database.getTeachers().find(t => t.id === currentUser.teacherId)
+        : Database.findTeacherByEmail(currentUser.email);
+      const teacherName = teacherRecord?.name || currentUser.name;
+
+      const getReports = () =>
+        Database.getReports().filter(report => namesMatch(report.teacher, teacherName))
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      let reports = getReports();
+      renderHistory(reports);
+      updateCards(reports);
+
+      reportForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const newReport = {
+          teacher: teacherName,
+          totalUnits: Number(document.getElementById('reportUnits').value) || 0,
+          subjects: document.getElementById('reportSubjects').value.split(',').map(s => s.trim()).filter(Boolean),
+          semester: document.getElementById('reportSemester').value,
+          course: document.getElementById('reportCourse').value,
+          yearLevel: document.getElementById('reportYearLevel').value,
+          createdAt: Date.now()
+        };
+
+        if (!newReport.subjects.length) {
+          alert('Please list at least one subject.');
+          return;
+        }
+
+        Database.addReport(newReport);
+        reports = getReports();
+        renderHistory(reports);
+        updateCards(reports);
+        reportForm.reset();
+        alert('Report submitted successfully!');
+      });
+
+      document.getElementById('resetForm').addEventListener('click', () => reportForm.reset());
+
+      logoutLink.addEventListener('click', e => {
+        e.preventDefault();
+        Auth.logout();
+        window.location.href = '../login.html';
+      });
+    };
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logout | FLMS</title>
+  <link rel="stylesheet" href="css/logout.css">
+</head>
+<body>
+
+  <!-- Logout Modal -->
+  <div class="logout-modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <h2>Confirm Logout</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="modal-buttons">
+        <button class="confirm-btn" id="logoutYes">Yes, Exit</button>
+        <button class="cancel-btn" id="logoutNo">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    if (!Auth.isAuthenticated()) {
+      window.location.href = "login.html";
+    }
+
+    window.addEventListener("load", function() {
+      const modal = document.getElementById("logoutModal");
+      modal.classList.add("active");
+    });
+
+    document.getElementById("logoutYes").addEventListener("click", function() {
+      Auth.logout();
+      alert("You have been logged out successfully!");
+      window.location.href = "login.html";
+    });
+
+    document.getElementById("logoutNo").addEventListener("click", function() {
+      const modal = document.getElementById("logoutModal");
+      modal.classList.remove("active");
+      window.history.back();
+    });
+  </script>
+
+</body>
+</html>

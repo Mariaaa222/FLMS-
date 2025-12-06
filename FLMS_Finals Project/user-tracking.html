@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Tracking | FLMS</title>
+  <link rel="stylesheet" href="css/user-tracking.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li><i class="fa-solid fa-chart-line"></i><a href="dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="subjects.html">Subjects</a></li>
+      <li><i class="fa-solid fa-user"></i><a href="teachers.html">Teachers</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="schedule.html">Schedule</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="report.html">Reports</a></li>
+      <li class="active"><i class="fa-solid fa-users"></i><a href="user-tracking.html">User Tracking</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <header>
+      <div class="admin-header">
+        <p>Welcome, <span id="welcomeName">Admin</span>!</p>
+        <img src="images/CTU_LOGO.png" alt="Logo">
+      </div>
+    </header>
+
+    <div class="header-section">
+      <h1><i class="fa-solid fa-users"></i> USER ACTIVITY TRACKING</h1>
+      <div class="header-buttons">
+        <button id="exportExcelBtn" class="btn-export"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+        <button id="exportPDFBtn" class="btn-export"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+        <button id="refreshBtn" class="btn-refresh"><i class="fa-solid fa-sync-alt"></i> Refresh</button>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-container">
+      <div class="stat-card">
+        <div class="stat-icon signup">
+          <i class="fa-solid fa-user-plus"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="totalSignups">0</h3>
+          <p>Total Signups</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon login">
+          <i class="fa-solid fa-sign-in-alt"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="totalLogins">0</h3>
+          <p>Total Logins</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon users">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="totalUsers">0</h3>
+          <p>Total Users</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon active">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="activeUsers">0</h3>
+          <p>Active Today</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <label><i class="fa-solid fa-filter"></i> Filter by Activity:</label>
+        <select id="filterActivity">
+          <option value="">All Activities</option>
+          <option value="signup">Signups Only</option>
+          <option value="login">Logins Only</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label><i class="fa-solid fa-user-tag"></i> Filter by Role:</label>
+        <select id="filterRole">
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="teacher">Teacher</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label><i class="fa-solid fa-calendar"></i> Date Range:</label>
+        <input type="date" id="dateFrom">
+        <span>to</span>
+        <input type="date" id="dateTo">
+      </div>
+      <div class="filter-group">
+        <input type="text" id="searchInput" placeholder="Search by name or email...">
+        <button id="clearFilters" class="btn-clear"><i class="fa-solid fa-xmark"></i> Clear</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="all"><i class="fa-solid fa-list"></i> All Activities</button>
+      <button class="tab-btn" data-tab="signups"><i class="fa-solid fa-user-plus"></i> Signups</button>
+      <button class="tab-btn" data-tab="logins"><i class="fa-solid fa-sign-in-alt"></i> Logins</button>
+      <button class="tab-btn" data-tab="users"><i class="fa-solid fa-users"></i> Registered Users</button>
+    </div>
+
+    <!-- All Activities Table -->
+    <div class="table-section tab-content active" id="tab-all">
+      <div class="table-header">
+        <h3><i class="fa-solid fa-history"></i> All User Activities</h3>
+        <div class="table-controls">
+          <label>Sort by:</label>
+          <select id="sortBy">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="activity">Activity Type</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Activity</th>
+              <th>User Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="allActivitiesBody">
+            <tr><td colspan="6" class="empty-state">Loading activities...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Signups Table -->
+    <div class="table-section tab-content" id="tab-signups">
+      <div class="table-header">
+        <h3><i class="fa-solid fa-user-plus"></i> User Signups</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Signup Date</th>
+              <th>User Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Contact</th>
+              <th>Address</th>
+            </tr>
+          </thead>
+          <tbody id="signupsBody">
+            <tr><td colspan="6" class="empty-state">No signups found.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Logins Table -->
+    <div class="table-section tab-content" id="tab-logins">
+      <div class="table-header">
+        <h3><i class="fa-solid fa-sign-in-alt"></i> User Logins</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Login Date & Time</th>
+              <th>User Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Remember Me</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="loginsBody">
+            <tr><td colspan="6" class="empty-state">No logins found.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Registered Users Table -->
+    <div class="table-section tab-content" id="tab-users">
+      <div class="table-header">
+        <h3><i class="fa-solid fa-users"></i> Registered Users</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>User Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Registration Date</th>
+              <th>Last Login</th>
+              <th>Total Logins</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="7" class="empty-state">No users found.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Logout Modal -->
+  <div id="logoutModal" class="logout-modal">
+    <div class="logout-content">
+      <h2>Confirm Exit</h2>
+      <p>Are you sure you want to log out of your account?</p>
+      <div class="logout-buttons">
+        <button id="confirmLogout">Yes, Exit</button>
+        <button id="cancelLogout">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/user-tracking.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup | FLMS</title>
+  <link rel="stylesheet" href="css/signup.css">
+</head>
+<body>
+
+  <h2>Create Account</h2>
+
+  <form id="signupForm">
+    <label for="fullName">Full Name</label><br>
+    <input id="fullName" type="text" placeholder="Enter your full name" required><br><br>
+
+    <label for="signupEmail">Email</label><br>
+    <input id="signupEmail" type="email" placeholder="Enter your email" required><br><br>
+
+    <label for="signupPassword">Password</label><br>
+    <input id="signupPassword" type="password" placeholder="Create a password" required><br><br>
+
+    <label for="confirmPassword">Confirm Password</label><br>
+    <input id="confirmPassword" type="password" placeholder="Confirm your password" required><br><br>
+
+    <label for="contactNumber">Contact Number</label><br>
+    <input id="contactNumber" type="text" placeholder="Enter your contact number" required><br><br>
+
+    <label for="address">Address</label><br>
+    <input id="address" type="text" placeholder="Search your address or click on the map" required><br><br>
+
+    <label for="roleSelect">Register As</label><br>
+    <select id="roleSelect" required>
+      <option value="teacher">Teacher</option>
+    </select><br><br>
+
+    <label for="gender">Gender</label><br>
+    <select id="gender" required>
+      <option value="" disabled selected>Select gender</option>
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+      <option value="prefer not to say">Prefer not to say</option>
+    </select><br><br>
+
+    <label for="birthDate">Date of Birth</label><br>
+    <input id="birthDate" type="date" required><br><br>
+
+    <button type="submit">Sign Up</button>
+    <p>Already have an account? <a href="login.html">Log in</a></p>
+  </form>
+
+  <script src="js/database.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    if (Auth.isAuthenticated()) {
+      window.location.href = 'dashboard.html';
+    }
+
+    const signupForm = document.getElementById('signupForm');
+
+    signupForm.addEventListener('submit', event => {
+      event.preventDefault();
+
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const contactNumber = document.getElementById('contactNumber').value.trim();
+      const address = document.getElementById('address').value.trim();
+      const gender = document.getElementById('gender').value;
+      const birthDate = document.getElementById('birthDate').value;
+      const role = document.getElementById('roleSelect').value;
+
+      if (password.length < 6) {
+        alert('Password must be at least 6 characters long.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert('Passwords do not match.');
+        return;
+      }
+
+      if (Database.findUserByEmail(email)) {
+        alert('An account with this email already exists.');
+        return;
+      }
+
+      let teacherId = null;
+      if (role === 'teacher') {
+        const teacher = Database.addTeacher({
+          name: fullName,
+          email,
+          units: 0
+        });
+        teacherId = teacher.id;
+      }
+
+      const newUser = Database.addUser({
+        name: fullName,
+        email,
+        password,
+        role,
+        contactNumber,
+        address,
+        gender,
+        birthDate,
+        teacherId,
+        createdAt: new Date().toISOString()
+      });
+
+      // Log signup activity
+      Database.addUserActivity('signup', newUser.id, newUser.name, newUser.email, newUser.role, {
+        signupMethod: 'web',
+        contactNumber,
+        address,
+        gender,
+        birthDate
+      });
+
+      Auth.login(newUser, { remember: true });
+      alert('Account created successfully!');
+      if (role === 'teacher') {
+        window.location.href = 'teacher/teacher-dashboard.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    });
+  </script>
+
+</body>
+</html>

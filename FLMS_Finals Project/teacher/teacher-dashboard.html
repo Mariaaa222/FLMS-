@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard | FLMS</title>
+  <link rel="stylesheet" href="teacher.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>FLMS</h2>
+    <ul>
+      <li class="active"><i class="fa-solid fa-gauge"></i><a href="teacher-dashboard.html">Dashboard</a></li>
+      <li><i class="fa-solid fa-calendar-days"></i><a href="teacher-schedule.html">My Schedule</a></li>
+      <li><i class="fa-solid fa-book"></i><a href="teacher-subjects.html">My Subjects</a></li>
+      <li><i class="fa-solid fa-file-lines"></i><a href="teacher-report.html">Reports</a></li>
+      <li><i class="fa-solid fa-right-from-bracket"></i><a href="#" id="logoutLink">Logout</a></li>
+    </ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <header>
+      <div class="teacher-header">
+        <div>
+          <p>Welcome back, <strong id="welcomeName">Teacher</strong>!</p>
+          <small id="welcomeEmail">teacher@school.edu</small>
+        </div>
+        <img src="../images/CTU_LOGO.png" alt="Logo" />
+      </div>
+    </header>
+
+    <section class="profile-banner">
+      <div class="profile-card">
+        <div>
+          <span class="label">Teacher</span>
+          <h2 id="teacherName">-</h2>
+          <p id="teacherEmail">-</p>
+        </div>
+        <div class="profile-meta">
+          <div>
+            <span class="label">Total Units</span>
+            <strong id="teacherUnits">0</strong>
+          </div>
+          <div>
+            <span class="label">Role</span>
+            <strong>Teacher</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <h1>Dashboard Overview</h1>
+    <div class="cards">
+      <div class="card">
+        <i class="fa-solid fa-book"></i>
+        <h3>Subjects</h3>
+        <p><span id="subjectCount">0</span> Assigned</p>
+      </div>
+
+      <div class="card">
+        <i class="fa-solid fa-calendar-days"></i>
+        <h3>Today’s Classes</h3>
+        <p><span id="todayClasses">0</span> Scheduled</p>
+      </div>
+
+      <div class="card">
+        <i class="fa-solid fa-file-lines"></i>
+        <h3>Reports</h3>
+        <p><span id="reportCount">0</span> Submitted</p>
+      </div>
+    </div>
+
+    <div class="panels">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Upcoming Schedule</h2>
+          <small id="scheduleSummary">No classes scheduled.</small>
+        </div>
+        <div class="table-wrapper">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Room</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleTableBody">
+              <tr>
+                <td colspan="4">No schedule yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>My Subjects</h2>
+          <small id="subjectSummary">Loading…</small>
+        </div>
+        <ul class="subject-list" id="subjectList">
+          <li>No subjects assigned.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <script src="../js/database.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const normalizeText = text =>
+      (text || '').toLowerCase().replace(/\./g, '').trim();
+
+    const lastName = text => {
+      const cleaned = (text || '').replace(/\./g, '').trim().split(/\s+/);
+      return cleaned.pop()?.toLowerCase() || '';
+    };
+
+    const namesMatch = (teacherName, targetName) => {
+      if (!teacherName || !targetName) return false;
+      const teacherNorm = normalizeText(teacherName);
+      const targetNorm = normalizeText(targetName);
+      if (teacherNorm === targetNorm) return true;
+      if (teacherNorm.includes(targetNorm) || targetNorm.includes(teacherNorm)) return true;
+      return lastName(teacherName) === lastName(targetName);
+    };
+
+    const dayOrder = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    const logoutLink = document.getElementById('logoutLink');
+    const welcomeNameEl = document.getElementById('welcomeName');
+    const welcomeEmailEl = document.getElementById('welcomeEmail');
+    const teacherNameEl = document.getElementById('teacherName');
+    const teacherEmailEl = document.getElementById('teacherEmail');
+    const teacherUnitsEl = document.getElementById('teacherUnits');
+    const subjectCountEl = document.getElementById('subjectCount');
+    const todayClassesEl = document.getElementById('todayClasses');
+    const reportCountEl = document.getElementById('reportCount');
+    const subjectSummaryEl = document.getElementById('subjectSummary');
+    const scheduleSummaryEl = document.getElementById('scheduleSummary');
+    const scheduleTableBody = document.getElementById('scheduleTableBody');
+    const subjectList = document.getElementById('subjectList');
+
+    const init = () => {
+      Auth.requireAuth();
+      const currentUser = Auth.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'teacher') {
+        window.location.href = '../dashboard.html';
+        return;
+      }
+
+      welcomeNameEl.textContent = currentUser.name.split(' ')[0] || currentUser.name;
+      welcomeEmailEl.textContent = currentUser.email;
+
+      const teacherRecord =
+        (currentUser.teacherId && Database.getTeachers().find(t => t.id === currentUser.teacherId)) ||
+        Database.findTeacherByEmail(currentUser.email) ||
+        Database.getTeachers().find(t => namesMatch(t.name, currentUser.name)) ||
+        null;
+
+      const teacherName = teacherRecord?.name || currentUser.name;
+      const teacherEmail = teacherRecord?.email || currentUser.email;
+      const teacherUnits = teacherRecord?.units ?? 0;
+
+      teacherNameEl.textContent = teacherName;
+      teacherEmailEl.textContent = teacherEmail;
+      teacherUnitsEl.textContent = teacherUnits;
+
+      const mySubjects = Database.getSubjects().filter(subj => namesMatch(teacherName, subj.instructor));
+      const mySchedules = Database.getSchedules().filter(sched => namesMatch(teacherName, sched.instructor));
+      const myReports = Database.getReports().filter(rep => namesMatch(teacherName, rep.teacher));
+
+      subjectCountEl.textContent = mySubjects.length;
+      reportCountEl.textContent = myReports.length;
+
+      const today = new Date();
+      const todayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+      const classesToday = mySchedules.filter(sched => sched.day === todayName).length;
+      todayClassesEl.textContent = classesToday;
+
+      subjectSummaryEl.textContent = mySubjects.length
+        ? `${mySubjects.length} subject${mySubjects.length > 1 ? 's' : ''} assigned`
+        : 'No subjects assigned yet.';
+
+      scheduleSummaryEl.textContent = mySchedules.length
+        ? `${mySchedules.length} class${mySchedules.length > 1 ? 'es' : ''} scheduled`
+        : 'No classes scheduled.';
+
+      renderScheduleTable(mySchedules);
+      renderSubjectList(mySubjects);
+    };
+
+    const renderScheduleTable = schedules => {
+      if (!schedules.length) {
+        scheduleTableBody.innerHTML = '<tr><td colspan="4">No schedule yet.</td></tr>';
+        return;
+      }
+
+      const sorted = [...schedules].sort((a, b) => {
+        const dayDiff = dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+        if (dayDiff !== 0) return dayDiff;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+
+      scheduleTableBody.innerHTML = sorted
+        .map(sched => {
+          const timeRange = `${sched.startTime || '--:--'} - ${sched.endTime || '--:--'}`;
+          return `
+            <tr>
+              <td>${sched.courseCode}</td>
+              <td>${sched.day}</td>
+              <td>${timeRange}</td>
+              <td>${sched.room}</td>
+            </tr>
+          `;
+        })
+        .join('');
+    };
+
+    const renderSubjectList = subjects => {
+      if (!subjects.length) {
+        subjectList.innerHTML = '<li>No subjects assigned.</li>';
+        return;
+      }
+
+      subjectList.innerHTML = subjects
+        .map(subj => `
+          <li>
+            <div>
+              <strong>${subj.code}</strong>
+              <p>${subj.title}</p>
+            </div>
+            <div class="tags">
+              <span>${subj.year}</span>
+              <span>${subj.sem}</span>
+              <span>${subj.units} unit${subj.units > 1 ? 's' : ''}</span>
+            </div>
+          </li>
+        `)
+        .join('');
+    };
+
+    logoutLink.addEventListener('click', e => {
+      e.preventDefault();
+      Auth.logout();
+      window.location.href = '../login.html';
+    });
+
+    init();
+  </script>
+</body>
+</html>
